@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "Attach to Packager",
+            "request": "attach",
+            "type": "reactnative",
+            "cwd": "Users/kieran/Desktop/YT-bookmark-react/videobookmark"
+        }
+    ]
+}
