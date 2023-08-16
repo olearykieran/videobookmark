@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-videobookmark-dev-102008-authRole",
+      "UnauthRoleArn": "arn:aws:iam::680098755443:role/amplify-videobookmark-dev-102008-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::680098755443:role/amplify-videobookmark-dev-102008-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-videobookmark-dev-102008-deployment",
+      "UnauthRoleName": "amplify-videobookmark-dev-102008-unauthRole",
+      "StackName": "amplify-videobookmark-dev-102008",
+      "StackId": "arn:aws:cloudformation:us-east-1:680098755443:stack/amplify-videobookmark-dev-102008/d782b030-3b76-11ee-b350-0eda52d82de3",
+      "AmplifyAppId": "d16ajuf19c727x"
+    }
+  }
+}
