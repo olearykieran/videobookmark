@@ -1,13 +1,5 @@
 import axios from 'axios';
-
-interface Bookmark {
-  id: string;
-  url: string;
-  timestamp: number;
-  title?: string;
-  thumbnail?: string;
-  note?: string;
-}
+import { Bookmark } from './src/API';
 
 export const parseYoutubeURL = async (url: string): Promise<Bookmark> => {
   const videoIdMatch = url.match(/v=([a-zA-Z0-9_-]+)/);

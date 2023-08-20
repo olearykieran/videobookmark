@@ -8,6 +8,7 @@ export type CreateBookmarkInput = {
   timestamp: number,
   title?: string | null,
   thumbnail?: string | null,
+  userID?: string | null,
   note?: string | null,
   _version?: number | null,
 };
@@ -91,6 +92,7 @@ export type Bookmark = {
   title?: string | null,
   thumbnail?: string | null,
   note?: string | null,
+  userID?: string,
   createdAt?: string,
   updatedAt?: string,
   _version?: number,
@@ -105,6 +107,7 @@ export type UpdateBookmarkInput = {
   title?: string | null,
   thumbnail?: string | null,
   note?: string | null,
+  userID?: string | null,
   _version?: number | null,
 };
 

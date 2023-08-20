@@ -15,6 +15,8 @@ import { parseYoutubeURL } from './ytapi'; // Adjust the path as necessary
 import { ListBookmarksQuery } from './src/API';
 import { Auth, API } from 'aws-amplify';
 import awsconfig from './src/aws-exports';
+import UserDefaults from 'react-native-userdefaults-ios';
+import { GoogleSignin } from 'react-native-google-signin';
 
 // Configure Auth
 Auth.configure(awsconfig);
@@ -69,8 +71,102 @@ const App: React.FC = () => {
     backgroundColor: isDarkMode ? '#333333' : '#FFFFFF',
   };
 
+  const signIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      // Handle successful sign-in here
+    } catch (error) {
+      // Handle sign-in error here
+    }
+  };
+
+  const getUserID = async () => {
+    try {
+      const userInfo = await GoogleSignin.getCurrentUser();
+      return userInfo?.user?.id; // userID
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await GoogleSignin.revokeAccess();
+      await GoogleSignin.signOut();
+      // Handle successful sign-out here
+    } catch (error) {
+      // Handle sign-out error here
+    }
+  };
+
+  const handleSharedURLFromUserDefaults = async () => {
+    const suiteName = 'group.com.yourcompany.yourapp';
+    const key = 'sharedURL';
+  
+    UserDefaults.stringForKey(key, suiteName)
+      .then(async (sharedURL) => {
+        if (sharedURL) {
+          // Parse the shared URL
+          const parsedBookmark = await parseYoutubeURL(sharedURL);
+          const userID = await getUserID(); // Get userID
+
+          if (!userID) {
+            console.error('Unable to retrieve user ID');
+            return;
+          }
+          
+          const userBookmarks = bookmarks.filter(bookmark => bookmark.userID === userID);
+
+          if (userBookmarks.length + 1 > 10) {
+            alert('You have reached the maximum bookmark limit. Please delete some bookmarks to save new ones.');
+            return;
+          }
+
+          // You may need to adjust the properties according to your actual structure
+          const bookmark: Bookmark = {
+            url: parsedBookmark.url,
+            timestamp: parsedBookmark.timestamp,
+            title: parsedBookmark.title || null,
+            thumbnail: parsedBookmark.thumbnail || null,
+            note: null,
+            userID,
+          };
+  
+          // Create the bookmark in Amplify
+          const createBookmarkInput: CreateBookmarkMutationVariables = {
+            input: bookmark,
+          };
+  
+          try {
+            const response = await (API.graphql(graphqlOperation(createBookmark, createBookmarkInput)) as Promise<any>);
+            console.log('Bookmark created:', response);
+            alert('Bookmark saved successfully!');
+            setBookmarkAdded(true); // Triggering re-fetching of bookmarks
+          } catch (error) {
+            console.error('Error creating bookmark:', error);
+            console.error('Detailed errors:', error.errors);
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error reading shared URL:', error);
+      });
+  };
+  
+  // Call this function when the component mounts
+  useEffect(() => {
+    handleSharedURLFromUserDefaults();
+  }, []);
+
   const handleSharedURL = async () => {
     const initialURL = await Linking.getInitialURL();
+    const userID = await getUserID();
+    if (!userID) {
+      console.error('Unable to retrieve user ID');
+      return;
+  }
     if (initialURL) {
       const parsedBookmark = await parseYoutubeURL(initialURL);
   
@@ -81,13 +177,16 @@ const App: React.FC = () => {
         title: parsedBookmark.title || null,
         thumbnail: parsedBookmark.thumbnail || null,
         note: null, // You can keep this null or use some default value if needed
+        userID
       };
       
+      const userBookmarks = bookmarks.filter(bookmark => bookmark.userID === userID);
+
       // Check if bookmark count is within the limit
-      if (bookmarks.length + 1 > 10) {
-        alert('You have reached the maximum bookmark limit. Please delete some bookmarks to save new ones.');
-        return;
-      }
+      if (userBookmarks.length + 1 > 10) {
+      alert('You have reached the maximum bookmark limit. Please delete some bookmarks to save new ones.');
+      return;
+    }
 
       // Create the bookmark in Amplify
       const createBookmarkInput: CreateBookmarkMutationVariables = {
@@ -142,16 +241,22 @@ const App: React.FC = () => {
 // Fetch bookmarks
 const fetchBookmarks = async () => {
   try {
-    const result = await API.graphql(graphqlOperation(listBookmarks));
-    console.log('Result of fetchBookmarks:', result); // Log the result
+    const userID = await getUserID(); // Get the user's ID
+    if (!userID) {
+      console.error('Unable to retrieve user ID');
+      return;
+    }
+
+    // Fetch bookmarks with a filter based on the user's ID
+    const result = await API.graphql(graphqlOperation(listBookmarks, { filter: { userID: { eq: userID } } }));
+    console.log('Result of fetchBookmarks:', result);
 
     if (result && 'data' in result && result.data.listBookmarks) {
       const typedData = result.data as ListBookmarksQuery;
 
-      // Check if listBookmarks and its items property are defined
       if (typedData.listBookmarks && typedData.listBookmarks.items) {
         const filteredBookmarks: Bookmark[] = typedData.listBookmarks.items
-          .filter((item): item is NonNullable<typeof item> => item !== null) // Filter out null items
+          .filter((item): item is NonNullable<typeof item> => item !== null && item.userID === userID) // Filter by userID
           .map(item => ({
             url: item.url,
             timestamp: item.timestamp,
@@ -159,9 +264,8 @@ const fetchBookmarks = async () => {
             thumbnail: item.thumbnail || null,
             note: item.note || null,
           }))
-          .filter(bookmark => bookmark.url); // Filtering to make sure bookmark has URL
+          .filter(bookmark => bookmark.url);
       
-        // Check if there are any bookmarks
         if (filteredBookmarks.length > 0) {
           setBookmarks(filteredBookmarks);
           updateBookmarkCount();
@@ -169,14 +273,10 @@ const fetchBookmarks = async () => {
           console.log('No bookmarks found');
         }
       }
-      
-      
-      
-      
     }
   } catch (error) {
     console.error('Error fetching bookmarks:', error);
-    console.error('Detailed errors:', error.errors); // Log the errors array
+    console.error('Detailed errors:', error.errors);
   }
 };
 
