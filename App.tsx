@@ -27,14 +27,31 @@ import { graphqlOperation } from 'aws-amplify';
 import { listBookmarks } from './src/graphql/queries';
 import { createBookmark } from './src/graphql/mutations'; // import the generated mutation
 import { CreateBookmarkMutationVariables } from './src/API'; // import the generated type
-import { Bookmark } from './src/API';
 import { deleteBookmark } from './src/graphql/mutations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+type Bookmark = {
+  __typename?: "Bookmark",
+  id?: string,
+  url: string,
+  timestamp: number,
+  title?: string | null,
+  thumbnail?: string | null,
+  note?: string | null,
+  userID: string,
+  createdAt?: string,
+  updatedAt?: string,
+  _version?: number,
+  _deleted?: boolean | null,
+  _lastChangedAt?: number,
+};
 
 type SectionProps = {
   title: string;
   children: React.ReactNode;
 };
+
+
 
 const Section: React.FC<SectionProps> = ({ children, title }) => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -263,6 +280,7 @@ const fetchBookmarks = async () => {
             title: item.title || null,
             thumbnail: item.thumbnail || null,
             note: item.note || null,
+            userID: item.userID
           }))
           .filter(bookmark => bookmark.url);
       
