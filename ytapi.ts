@@ -1,5 +1,21 @@
 import axios from 'axios';
-import { Bookmark } from './src/API';
+import { YOUTUBE_API_KEY } from '@env';
+
+type Bookmark = {
+  __typename?: "Bookmark",
+  id?: string,
+  url: string,
+  timestamp: number,
+  title?: string | null,
+  thumbnail?: string | null,
+  note?: string | null,
+  userID?: string,
+  createdAt?: string,
+  updatedAt?: string,
+  _version?: number,
+  _deleted?: boolean | null,
+  _lastChangedAt?: number,
+};
 
 export const parseYoutubeURL = async (url: string): Promise<Bookmark> => {
   const videoIdMatch = url.match(/v=([a-zA-Z0-9_-]+)/);
@@ -7,7 +23,7 @@ export const parseYoutubeURL = async (url: string): Promise<Bookmark> => {
   const timestampMatch = url.match(/t=(\d+)/);
   const timestamp = timestampMatch ? Number(timestampMatch[1]) : 0;
 
-  const apiKey = 'AIzaSyDHZhJzI5REakPToKO-QXqxuKxzotrLDc4'; // Replace with your YouTube API key
+  const apiKey = YOUTUBE_API_KEY
   const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet`;
 
   try {
